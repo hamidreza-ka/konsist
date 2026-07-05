@@ -19,10 +19,27 @@ import org.junit.platform.engine.support.descriptor.MethodSource
 import java.lang.reflect.Method
 import java.util.Optional
 
+/**
+ * JUnit Platform [TestEngine] that discovers and executes Konsist architecture rules.
+ *
+ * Registered via `META-INF/services/org.junit.platform.engine.TestEngine` so JUnit's
+ * launcher picks it up automatically — no explicit registration needed in consuming projects.
+ *
+ * Discovery scans `ir.tapsell.konsist.rules` for classes that contain at least one
+ * [@Test][Test]-annotated method (see [RULE_CLASSES]). Each such class becomes a
+ * [KonsistClassDescriptor] (CONTAINER) whose methods become [KonsistMethodDescriptor]s (TEST).
+ */
 class KonsistTestEngine : TestEngine {
 
+    /** Stable engine ID used by JUnit Platform to route discovery/execution requests. */
     override fun getId(): String = "tapsell-konsist"
 
+    /**
+     * Builds the test tree from [RULE_CLASSES].
+     *
+     * Classes with no [@Test][Test] methods are silently dropped so empty rule files
+     * do not pollute the test report.
+     */
     override fun discover(request: EngineDiscoveryRequest, uniqueId: UniqueId): TestDescriptor {
         val engineDescriptor = EngineDescriptor(uniqueId, "Tapsell Konsist Rules")
 
@@ -36,6 +53,7 @@ class KonsistTestEngine : TestEngine {
         return engineDescriptor
     }
 
+    /** Wraps [ruleClass] in a [KonsistClassDescriptor] and attaches one child per [@Test][Test] method. */
     private fun buildClassDescriptor(engineId: UniqueId, ruleClass: Class<*>): KonsistClassDescriptor {
         val classId = engineId.append("class", ruleClass.name)
         val classDescriptor = KonsistClassDescriptor(classId, ruleClass)
@@ -63,6 +81,12 @@ class KonsistTestEngine : TestEngine {
         listener.executionFinished(engine, TestExecutionResult.successful())
     }
 
+    /**
+     * Instantiates the rule class via its no-arg constructor and runs each method.
+     *
+     * Construction failure is reported as a class-level failure so the remaining
+     * classes still execute.
+     */
     private fun executeClass(classDescriptor: KonsistClassDescriptor, listener: EngineExecutionListener) {
         listener.executionStarted(classDescriptor)
 
@@ -80,6 +104,12 @@ class KonsistTestEngine : TestEngine {
         listener.executionFinished(classDescriptor, TestExecutionResult.successful())
     }
 
+    /**
+     * Invokes a single rule method and translates the outcome to a [TestExecutionResult].
+     *
+     * [java.lang.reflect.InvocationTargetException] is unwrapped so the underlying Konsist assertion
+     * (not the reflection wrapper) appears in the failure report.
+     */
     private fun executeMethod(
         methodDescriptor: KonsistMethodDescriptor,
         instance: Any,
@@ -98,6 +128,13 @@ class KonsistTestEngine : TestEngine {
     }
 
     private companion object {
+        /**
+         * All rule classes in `ir.tapsell.konsist.rules`, discovered lazily at first use.
+         *
+         * ClassGraph is used instead of a hand-rolled JDK solution because Spring Boot fat
+         * JARs use a custom URL protocol (`jar:nested:…`) that [java.net.JarURLConnection]
+         * cannot open, causing standard classpath scanning to miss classes entirely.
+         */
         val RULE_CLASSES: List<Class<*>> by lazy {
             ClassGraph()
                 .enableClassInfo()
@@ -112,6 +149,12 @@ class KonsistTestEngine : TestEngine {
     }
 }
 
+/**
+ * CONTAINER descriptor for a Konsist rule class.
+ *
+ * Forwards the class-level [@Tag][Tag] annotations to the JUnit Platform so consumers
+ * can filter rule sets with `--include-tag konsist-<area>`.
+ */
 class KonsistClassDescriptor(
     uniqueId: UniqueId,
     val testClass: Class<*>,
@@ -126,6 +169,7 @@ class KonsistClassDescriptor(
             .mapTo(mutableSetOf()) { TestTag.create(it.value) }
 }
 
+/** TEST descriptor for a single [@Test][Test]-annotated rule method. */
 class KonsistMethodDescriptor(
     uniqueId: UniqueId,
     val method: Method,

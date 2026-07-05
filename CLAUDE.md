@@ -38,10 +38,15 @@ class AreaRules {
 
 ## Dependency Scoping
 
-| Scope         | What                                               | Why                                                                                                                                   |
-|---------------|----------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
-| `api`         | `konsist:0.17.3`, `junit-jupiter` (via BOM 5.10.2) | These are part of the rule classes' public API — consumers need them transitively                                                     |
-| `compileOnly` | Spring BOM 6.2.7, `spring-context`, `spring-web`   | Needed only to reference `@RestController`, `@Service`, `@Autowired`, etc. at compile time; consumers supply their own Spring version |
+| Scope            | What                                               | Why                                                                                                                                   |
+|------------------|----------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| `api`            | `konsist:0.17.3`, `junit-jupiter` (via BOM 5.10.2) | These are part of the rule classes' public API — consumers need them transitively                                                     |
+| `compileOnly`    | Spring BOM 6.2.7, `spring-context`, `spring-web`   | Needed only to reference `@RestController`, `@Service`, `@Autowired`, etc. at compile time; consumers supply their own Spring version |
+| `implementation` | `classgraph:4.8.184`                               | Used internally by `KonsistTestEngine` to discover rule classes at runtime; consumers don't call ClassGraph directly                  |
+
+## Rule Class Discovery
+
+`KonsistTestEngine` auto-discovers rule classes at runtime using ClassGraph — it scans the `ir.tapsell.konsist.rules` package and loads every class that contains at least one `@Test`-annotated method. **No registration is needed when adding a new rule class.** ClassGraph is used (over a hand-rolled JDK solution) because Spring Boot fat JARs use a custom URL protocol that the standard `JarURLConnection` approach cannot handle.
 
 ## Heuristic Text Matching
 
