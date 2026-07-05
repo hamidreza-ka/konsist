@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test
  * thread-safety hazard.
  */
 @Tag("konsist-immutability")
-class ImmutabilityRules {
+class ImmutabilityRulesTest {
 
     @Test
     fun `entity classes must be data class`() {

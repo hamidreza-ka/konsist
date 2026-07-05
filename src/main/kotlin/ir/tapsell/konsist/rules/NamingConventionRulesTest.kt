@@ -15,10 +15,10 @@ import org.springframework.web.bind.annotation.RestController
  * NOTE: requires Spring on the test classpath — `@Service`, `@Repository`,
  * and `@RestController` are matched by *annotation*, so an unannotated class
  * named `FooController` is intentionally NOT checked here (see
- * [PackageStructureRules] / [ImmutabilityRules] for name-based rules).
+ * [PackageStructureRulesTest] / [ImmutabilityRulesTest] for name-based rules).
  */
 @Tag("konsist-naming")
-class NamingConventionRules {
+class NamingConventionRulesTest {
 
     @Test
     fun `services must contains Service`() {

@@ -7,13 +7,13 @@ import org.junit.jupiter.api.Test
 /**
  * Misc. hygiene rules for production code.
  *
- * Heuristic: like [NonBlockingRules], every rule here matches
+ * Heuristic: like [NonBlockingRulesTest], every rule here matches
  * against `function.text` (the raw source of the function body), so it is a
  * substring search, not semantic analysis. It will also match the literal
  * inside comments or strings. Good enough as a guard-rail.
  */
 @Tag("konsist-general")
-class GeneralConventionRules {
+class GeneralConventionRulesTest {
 
     /**
      * `println` / `print(` write straight to stdout, bypassing the logging

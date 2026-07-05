@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController
  * by type.
  */
 @Tag("konsist-layer-dependency")
-class LayerDependencyRules {
+class LayerDependencyRulesTest {
 
     @Test
     fun `controllers must not depend on repositories`() {

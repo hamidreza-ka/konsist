@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test
  * production class, so helper/util tests are left alone.
  */
 @Tag("konsist-test-conventions")
-class TestConventionRules {
+class TestConventionRulesTest {
 
     @Test
     fun `unit tests must not load a Spring context`() {

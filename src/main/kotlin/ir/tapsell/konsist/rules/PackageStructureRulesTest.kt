@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController
  * default package → fails this rule".
  */
 @Tag("konsist-package-structure")
-class PackageStructureRules {
+class PackageStructureRulesTest {
 
     @Test
     fun `controllers must be inside controller or presentation package`() {

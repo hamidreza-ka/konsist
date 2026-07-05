@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test
  * [forbiddenCalls].
  */
 @Tag("konsist-non-blocking")
-class NonBlockingRules {
+class NonBlockingRulesTest {
     private val forbiddenCalls = listOf(
         "Thread.sleep",
         "CountDownLatch",
