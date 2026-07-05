@@ -1,12 +1,6 @@
 package ir.tapsell.konsist.engine
 
-import ir.tapsell.konsist.rules.GeneralConventionRulesTest
-import ir.tapsell.konsist.rules.ImmutabilityRulesTest
-import ir.tapsell.konsist.rules.LayerDependencyRulesTest
-import ir.tapsell.konsist.rules.NamingConventionRulesTest
-import ir.tapsell.konsist.rules.NonBlockingRulesTest
-import ir.tapsell.konsist.rules.PackageStructureRulesTest
-import ir.tapsell.konsist.rules.TestConventionRulesTest
+import io.github.classgraph.ClassGraph
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.platform.engine.EngineDiscoveryRequest
@@ -104,15 +98,17 @@ class KonsistTestEngine : TestEngine {
     }
 
     private companion object {
-        val RULE_CLASSES: List<Class<*>> = listOf(
-            GeneralConventionRulesTest::class.java,
-            ImmutabilityRulesTest::class.java,
-            LayerDependencyRulesTest::class.java,
-            NamingConventionRulesTest::class.java,
-            NonBlockingRulesTest::class.java,
-            PackageStructureRulesTest::class.java,
-            TestConventionRulesTest::class.java,
-        )
+        val RULE_CLASSES: List<Class<*>> by lazy {
+            ClassGraph()
+                .enableClassInfo()
+                .enableAnnotationInfo()
+                .acceptPackages("ir.tapsell.konsist.rules")
+                .scan()
+                .use { result ->
+                    result.getClassesWithMethodAnnotation(Test::class.java)
+                        .loadClasses()
+                }
+        }
     }
 }
 
