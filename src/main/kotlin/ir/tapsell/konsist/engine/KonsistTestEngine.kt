@@ -138,6 +138,7 @@ class KonsistTestEngine : TestEngine {
         val RULE_CLASSES: List<Class<*>> by lazy {
             ClassGraph()
                 .enableClassInfo()
+                .enableMethodInfo()
                 .enableAnnotationInfo()
                 .acceptPackages("ir.tapsell.konsist.rules")
                 .scan()
