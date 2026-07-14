@@ -3,6 +3,13 @@ package ir.tapsell.konsist.engine
 import io.github.classgraph.ClassGraph
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.AfterAllCallback
+import org.junit.jupiter.api.extension.AfterEachCallback
+import org.junit.jupiter.api.extension.BeforeAllCallback
+import org.junit.jupiter.api.extension.BeforeEachCallback
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.TestExecutionExceptionHandler
+import org.junit.platform.engine.ConfigurationParameters
 import org.junit.platform.engine.EngineDiscoveryRequest
 import org.junit.platform.engine.EngineExecutionListener
 import org.junit.platform.engine.ExecutionRequest
@@ -16,6 +23,7 @@ import org.junit.platform.engine.support.descriptor.AbstractTestDescriptor
 import org.junit.platform.engine.support.descriptor.ClassSource
 import org.junit.platform.engine.support.descriptor.EngineDescriptor
 import org.junit.platform.engine.support.descriptor.MethodSource
+import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import java.util.Optional
 
@@ -28,6 +36,27 @@ import java.util.Optional
  * Discovery scans `ir.tapsell.konsist.rules` for classes that contain at least one
  * [@Test][Test]-annotated method (see [RULE_CLASSES]). Each such class becomes a
  * [KonsistClassDescriptor] (CONTAINER) whose methods become [KonsistMethodDescriptor]s (TEST).
+ *
+ * ## Extension support
+ *
+ * The engine respects [@ExtendWith][ExtendWith] annotations on rule classes
+ * and invokes the declared extensions' lifecycle callbacks in the standard
+ * JUnit Jupiter order:
+ *
+ *  1. [BeforeAllCallback] – once per class
+ *  2. [BeforeEachCallback] – before each [@Test][Test] method
+ *  3. the [@Test][Test] method itself
+ *  4. [TestExecutionExceptionHandler] – if the method threw (BaselineExtension
+ *     records the failure here without re-throwing)
+ *  5. [AfterEachCallback] – after each method (BaselineExtension writes /
+ *     compares the per-method baseline here)
+ *  6. [AfterAllCallback] – once per class (BaselineExtension writes /
+ *     compares the per-class baseline here)
+ *
+ * Only the extension interfaces listed above are honoured; other Jupiter
+ * extension contracts (parameter resolution, test-template, lifecycle
+ * condition, etc.) are silently ignored because the custom engine does
+ * not implement their orchestration.
  */
 class KonsistTestEngine : TestEngine {
 
@@ -71,25 +100,32 @@ class KonsistTestEngine : TestEngine {
     override fun execute(request: ExecutionRequest) {
         val engine = request.rootTestDescriptor
         val listener = request.engineExecutionListener
+        val configParams = request.configurationParameters
 
         listener.executionStarted(engine)
 
         engine.children
             .filterIsInstance<KonsistClassDescriptor>()
-            .forEach { executeClass(it, listener) }
+            .forEach { executeClass(it, listener, configParams) }
 
         listener.executionFinished(engine, TestExecutionResult.successful())
     }
 
     /**
-     * Instantiates the rule class via its no-arg constructor and runs each method.
+     * Instantiates the rule class, reads [@ExtendWith][ExtendWith] annotations,
+     * and runs each method inside the standard lifecycle callback sequence.
      *
-     * Construction failure is reported as a class-level failure so the remaining
-     * classes still execute.
+     * Construction or [BeforeAllCallback] failure is reported as a class-level
+     * failure so the remaining classes still execute.
      */
-    private fun executeClass(classDescriptor: KonsistClassDescriptor, listener: EngineExecutionListener) {
+    private fun executeClass(
+        classDescriptor: KonsistClassDescriptor,
+        listener: EngineExecutionListener,
+        configParams: ConfigurationParameters,
+    ) {
         listener.executionStarted(classDescriptor)
 
+        // -- instantiate the test class --
         val instance = try {
             classDescriptor.testClass.getDeclaredConstructor().newInstance()
         } catch (e: Exception) {
@@ -97,33 +133,128 @@ class KonsistTestEngine : TestEngine {
             return
         }
 
+        // -- instantiate extensions declared via @ExtendWith on the class --
+        val extensions = classDescriptor.testClass
+            .getAnnotationsByType(ExtendWith::class.java)
+            .flatMap { it.value.toList() }
+            .mapNotNull { extClass ->
+                try {
+                    extClass.java.getDeclaredConstructor().newInstance()
+                } catch (e: Exception) {
+                    listener.executionFinished(classDescriptor, TestExecutionResult.failed(
+                        RuntimeException("Failed to instantiate extension ${extClass.java.name}: ${e.message}", e)
+                    ))
+                    return
+                }
+            }
+
+        val classContext = KonsistExtensionContext(
+            configurationParameters = configParams,
+            testClass = classDescriptor.testClass,
+            testInstance = instance,
+            uniqueId = classDescriptor.uniqueId.toString(),
+        )
+
+        // -- beforeAll callbacks --
+        try {
+            extensions.filterIsInstance<BeforeAllCallback>().forEach { it.beforeAll(classContext) }
+        } catch (e: Exception) {
+            listener.executionFinished(classDescriptor, TestExecutionResult.failed(e))
+            return
+        }
+
+        // -- run each method with beforeEach / afterEach / exception-handling --
         classDescriptor.children
             .filterIsInstance<KonsistMethodDescriptor>()
-            .forEach { executeMethod(it, instance, listener) }
+            .forEach { executeMethod(it, instance, listener, extensions, classContext, configParams) }
+
+        // -- afterAll callbacks (best-effort; failure overrides the class result) --
+        try {
+            extensions.filterIsInstance<AfterAllCallback>().forEach { it.afterAll(classContext) }
+        } catch (e: Exception) {
+            listener.executionFinished(classDescriptor, TestExecutionResult.failed(e))
+            return
+        }
 
         listener.executionFinished(classDescriptor, TestExecutionResult.successful())
     }
 
     /**
-     * Invokes a single rule method and translates the outcome to a [TestExecutionResult].
-     *
-     * [java.lang.reflect.InvocationTargetException] is unwrapped so the underlying Konsist assertion
-     * (not the reflection wrapper) appears in the failure report.
+     * Invokes a single rule method wrapped with [BeforeEachCallback],
+     * [TestExecutionExceptionHandler], and [AfterEachCallback].
      */
     private fun executeMethod(
         methodDescriptor: KonsistMethodDescriptor,
         instance: Any,
         listener: EngineExecutionListener,
+        extensions: List<Any>,
+        parentContext: KonsistExtensionContext,
+        configParams: ConfigurationParameters,
     ) {
+        val methodContext = KonsistExtensionContext(
+            configurationParameters = configParams,
+            testClass = methodDescriptor.method.declaringClass,
+            testMethod = methodDescriptor.method,
+            testInstance = instance,
+            parentContext = parentContext,
+            uniqueId = methodDescriptor.uniqueId.toString(),
+        )
+
+        // -- beforeEach callbacks --
+        try {
+            extensions.filterIsInstance<BeforeEachCallback>().forEach { it.beforeEach(methodContext) }
+        } catch (e: Exception) {
+            listener.executionStarted(methodDescriptor)
+            listener.executionFinished(methodDescriptor, TestExecutionResult.failed(e))
+            return
+        }
+
         listener.executionStarted(methodDescriptor)
-        val result = runCatching { methodDescriptor.method.invoke(instance) }
-            .fold(
-                onSuccess = { TestExecutionResult.successful() },
-                onFailure = { e ->
-                    val cause = (e as? java.lang.reflect.InvocationTargetException)?.cause ?: e
-                    TestExecutionResult.failed(cause)
-                },
-            )
+
+        // -- invoke the test method --
+        var throwable: Throwable? = null
+        try {
+            methodDescriptor.method.invoke(instance)
+        } catch (e: InvocationTargetException) {
+            throwable = e.cause ?: e
+        } catch (e: Exception) {
+            throwable = e
+        }
+
+        // -- exception handling chain --
+        var result: TestExecutionResult
+        if (throwable != null) {
+            val exceptionHandlers = extensions.filterIsInstance<TestExecutionExceptionHandler>()
+            var handled = false
+            var currentThrowable = throwable
+
+            for (handler in exceptionHandlers) {
+                try {
+                    handler.handleTestExecutionException(methodContext, currentThrowable!!)
+                    // If we get here, the handler swallowed the exception
+                    handled = true
+                    break
+                } catch (e: Throwable) {
+                    currentThrowable = e
+                }
+            }
+
+            result = if (handled) {
+                TestExecutionResult.successful()
+            } else {
+                TestExecutionResult.failed(currentThrowable)
+            }
+        } else {
+            result = TestExecutionResult.successful()
+        }
+
+        // -- afterEach callbacks (best-effort; failure overrides success) --
+        try {
+            extensions.filterIsInstance<AfterEachCallback>().forEach { it.afterEach(methodContext) }
+        } catch (e: Exception) {
+            result = TestExecutionResult.failed(e)
+        }
+
         listener.executionFinished(methodDescriptor, result)
     }
 
