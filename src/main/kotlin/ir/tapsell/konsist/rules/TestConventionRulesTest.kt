@@ -3,8 +3,10 @@ import com.lemonappdev.konsist.api.Konsist
 import com.lemonappdev.konsist.api.ext.list.withNameEndingWith
 import com.lemonappdev.konsist.api.verify.assertFalse
 import com.lemonappdev.konsist.api.verify.assertTrue
+import ir.beigirad.junitbaselineextension.BaselineExtension
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 
 /**
  * Keeps the unit-test suite fast and isolated.
@@ -15,6 +17,7 @@ import org.junit.jupiter.api.Test
  * production class, so helper/util tests are left alone.
  */
 @Tag("konsist-test-conventions")
+@ExtendWith(BaselineExtension::class)
 class TestConventionRulesTest {
 
     @Test

@@ -1,8 +1,10 @@
 package ir.tapsell.konsist.rules
 import com.lemonappdev.konsist.api.Konsist
 import com.lemonappdev.konsist.api.verify.assertFalse
+import ir.beigirad.junitbaselineextension.BaselineExtension
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 
 /**
  * Non-blocking / structured-concurrency guard-rails for production code.
@@ -27,6 +29,7 @@ import org.junit.jupiter.api.Test
  * [forbiddenCalls].
  */
 @Tag("konsist-non-blocking")
+@ExtendWith(BaselineExtension::class)
 class NonBlockingRulesTest {
     private val forbiddenCalls = listOf(
         "Thread.sleep",

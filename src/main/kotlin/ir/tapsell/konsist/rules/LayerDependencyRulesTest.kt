@@ -3,8 +3,10 @@ import com.lemonappdev.konsist.api.Konsist
 import com.lemonappdev.konsist.api.ext.list.properties
 import com.lemonappdev.konsist.api.ext.list.withAnnotationOf
 import com.lemonappdev.konsist.api.verify.assertFalse
+import ir.beigirad.junitbaselineextension.BaselineExtension
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
 
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController
  * by type.
  */
 @Tag("konsist-layer-dependency")
+@ExtendWith(BaselineExtension::class)
 class LayerDependencyRulesTest {
 
     @Test
