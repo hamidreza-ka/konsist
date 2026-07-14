@@ -3,8 +3,10 @@ package ir.tapsell.konsist.rules
 import com.lemonappdev.konsist.api.Konsist
 import com.lemonappdev.konsist.api.ext.list.withAnnotationOf
 import com.lemonappdev.konsist.api.verify.assertTrue
+import ir.beigirad.junitbaselineextension.BaselineExtension
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.stereotype.Repository
 import org.springframework.stereotype.Service
 import org.springframework.web.bind.annotation.RestController
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController
  * [PackageStructureRulesTest] / [ImmutabilityRulesTest] for name-based rules).
  */
 @Tag("konsist-naming")
+@ExtendWith(BaselineExtension::class)
 class NamingConventionRulesTest {
 
     @Test

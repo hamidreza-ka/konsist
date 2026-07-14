@@ -7,6 +7,7 @@ group = "ir.tapsell"
 
 repositories {
     mavenCentral()
+    maven { url = uri("https://jitpack.io") }
 }
 
 dependencies {
@@ -18,6 +19,9 @@ dependencies {
     compileOnly(platform("org.springframework:spring-framework-bom:6.2.7"))
     compileOnly("org.springframework:spring-context")
     compileOnly("org.springframework:spring-web")
+
+    /** Baseline/snapshot testing extension for JUnit 5 — consumers provide their own */
+    compileOnly("com.github.beigirad:junit-baseline-extension:1.6")
 
     /** ClassGraph scans the classpath for rule classes at runtime; kept implementation-scoped
      *  because consumers never call ClassGraph directly */

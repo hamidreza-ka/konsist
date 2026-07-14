@@ -5,8 +5,10 @@ import com.lemonappdev.konsist.api.ext.list.modifierprovider.withoutModifier
 import com.lemonappdev.konsist.api.ext.list.properties
 import com.lemonappdev.konsist.api.ext.list.withNameEndingWith
 import com.lemonappdev.konsist.api.verify.assertTrue
+import ir.beigirad.junitbaselineextension.BaselineExtension
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 
 /**
  * Immutability guarantees for production code.
@@ -25,6 +27,7 @@ import org.junit.jupiter.api.Test
  * thread-safety hazard.
  */
 @Tag("konsist-immutability")
+@ExtendWith(BaselineExtension::class)
 class ImmutabilityRulesTest {
 
     @Test

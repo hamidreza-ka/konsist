@@ -3,8 +3,10 @@ import com.lemonappdev.konsist.api.Konsist
 import com.lemonappdev.konsist.api.ext.list.withAnnotationOf
 import com.lemonappdev.konsist.api.ext.list.withNameEndingWith
 import com.lemonappdev.konsist.api.verify.assertTrue
+import ir.beigirad.junitbaselineextension.BaselineExtension
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.stereotype.Repository
 import org.springframework.web.bind.annotation.RestController
 
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController
  * default package → fails this rule".
  */
 @Tag("konsist-package-structure")
+@ExtendWith(BaselineExtension::class)
 class PackageStructureRulesTest {
 
     @Test

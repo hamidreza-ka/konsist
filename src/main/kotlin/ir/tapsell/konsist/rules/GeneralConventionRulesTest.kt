@@ -1,8 +1,11 @@
 package ir.tapsell.konsist.rules
+
 import com.lemonappdev.konsist.api.Konsist
 import com.lemonappdev.konsist.api.verify.assertFalse
+import ir.beigirad.junitbaselineextension.BaselineExtension
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 
 /**
  * Misc. hygiene rules for production code.
@@ -13,6 +16,7 @@ import org.junit.jupiter.api.Test
  * inside comments or strings. Good enough as a guard-rail.
  */
 @Tag("konsist-general")
+@ExtendWith(BaselineExtension::class)
 class GeneralConventionRulesTest {
 
     /**
