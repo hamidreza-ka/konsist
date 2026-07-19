@@ -16,21 +16,32 @@ import org.springframework.web.bind.annotation.RestController
  *
  * NOTE: requires Spring on the test classpath — `@Service`, `@Repository`,
  * and `@RestController` are matched by *annotation*, so an unannotated class
- * named `FooController` is intentionally NOT checked here (see
- * [PackageStructureRulesTest] / [ImmutabilityRulesTest] for name-based rules).
+ * named `FooController` is intentionally NOT checked here.
  */
 @Tag("konsist-naming")
 @ExtendWith(BaselineExtension::class)
 class NamingConventionRulesTest {
 
+    /**
+     * Every `@Service` class must be named `*Service` or `*ServiceImpl`.
+     *
+     * Matched by annotation type, not by name substring — an unannotated
+     * class called `FooService` is intentionally ignored.
+     */
     @Test
-    fun `services must contains Service`() {
+    fun `services must end with Service or ServiceImpl`() {
         Konsist.scopeFromProduction()
             .classes()
             .withAnnotationOf(Service::class)
-            .assertTrue { it.name.contains("Service") }
+            .assertTrue {
+                it.name.endsWith("ServiceImpl")
+                    || it.name.endsWith("Service")
+            }
     }
 
+    /**
+     * Every `@RestController` class must be named `*Controller`.
+     */
     @Test
     fun `controllers must end with Controller`() {
         Konsist.scopeFromProduction()
@@ -39,6 +50,9 @@ class NamingConventionRulesTest {
             .assertTrue { it.name.endsWith("Controller") }
     }
 
+    /**
+     * Every `@Repository` class must be named `*Repository`.
+     */
     @Test
     fun `repositories must end with Repository`() {
         Konsist.scopeFromProduction()
