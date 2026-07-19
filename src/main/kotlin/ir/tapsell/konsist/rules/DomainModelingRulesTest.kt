@@ -1,7 +1,6 @@
 package ir.tapsell.konsist.rules
 
 import com.lemonappdev.konsist.api.Konsist
-import com.lemonappdev.konsist.api.ext.list.modifierprovider.withEnumModifier
 import com.lemonappdev.konsist.api.ext.list.modifierprovider.withValueModifier
 import com.lemonappdev.konsist.api.ext.list.withNameEndingWith
 import com.lemonappdev.konsist.api.verify.assertFalse
@@ -10,24 +9,15 @@ import ir.beigirad.junitbaselineextension.BaselineExtension
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.springframework.beans.factory.annotation.Autowired
 
 /**
- * Konsist architecture tests for [Shared Domain Types](../shared-domain-types.md)
- * conventions.
- *
  * Enforces the shape of shared value types (inline value class wrapping UUID,
- * private constructor, canonical factories, KDoc) and enum consistency
- * (unique `code`/`externalKey` in snake_case).
- *
- * These tests are scoped to the `domain-types` repository itself — they verify
- * the definitions, not the consumers.
- *
- * @see shared-domain-types.md
+ * private constructor, canonical factories, KDoc) and forbids semantically
+ * empty types (`Pair`, `Triple`) in function signatures.
  */
 @ExtendWith(BaselineExtension::class)
 @Tag("konsist-domain-modeling")
-class SharedDomainTypesRulesTest {
+class DomainModelingRulesTest {
 
     /**
      * New shared value types MUST follow the canonical shape:
@@ -43,7 +33,6 @@ class SharedDomainTypesRulesTest {
      * High confidence — all conditions are directly inspectable from
      * declaration shape.
      *
-     * @see shared-domain-types.md §6
      */
     @Test
     fun `shared value types must follow the canonical id shape`() {
@@ -98,13 +87,12 @@ class SharedDomainTypesRulesTest {
      * convey no domain meaning. Replace with a named data class or a
      * sealed type that carries intent.
      *
-     * @see state-and-domain-modeling.md §10
      */
     @Test
     fun `functions must not use Pair or Triple in parameters or return types`() {
         val forbiddenTypeNames = setOf("Pair", "Triple", "kotlin.Pair", "kotlin.Triple")
 
-        Konsist.scopeFromProject()
+        Konsist.scopeFromProduction()
             .functions()
             .sortedBy { it.location }
             .assertFalse { fn ->

@@ -1,13 +1,18 @@
 package ir.tapsell.konsist.rules
+
 import com.lemonappdev.konsist.api.Konsist
+import com.lemonappdev.konsist.api.architecture.KoArchitectureCreator.assertArchitecture
+import com.lemonappdev.konsist.api.architecture.Layer
 import com.lemonappdev.konsist.api.ext.list.properties
 import com.lemonappdev.konsist.api.ext.list.withAnnotationOf
+import com.lemonappdev.konsist.api.ext.list.withPackage
 import com.lemonappdev.konsist.api.verify.assertFalse
 import ir.beigirad.junitbaselineextension.BaselineExtension
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Repository
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -28,6 +33,62 @@ import org.springframework.web.bind.annotation.RestController
 @Tag("konsist-layer-dependency")
 @ExtendWith(BaselineExtension::class)
 class LayerDependencyRulesTest {
+
+    /**
+     * `@RestController` classes must not depend on `Repository` types directly.
+     *
+     * Controllers belong to the presentation layer and must reach the data
+     * layer through a service. Both constructor-injected and field-injected
+     * (`@Autowired`) dependencies are checked. Detection is by parameter/field
+     * type name ending in `Repository` or bearing the `@Repository` annotation.
+     */
+    @Test
+    fun `controllers must not depend on repositories`() {
+        Konsist.scopeFromProduction()
+            .classes()
+            .withAnnotationOf(RestController::class)
+            .assertFalse { controller ->
+                // Constructor injection
+                val constructorDependsOnRepo = controller.primaryConstructor?.parameters?.any { dep ->
+                    dep.type.name.endsWith("Repository") ||
+                            dep.type.hasAnnotationOf(Repository::class)
+                } ?: false
+
+                // Field injection (@Autowired lateinit var repo)
+                val fieldDependsOnRepo = controller.properties().filter { prop ->
+                            prop.hasAnnotationOf(Autowired::class)
+                        }
+                        .any { prop ->
+                            prop.type?.name?.endsWith("Repository") == true
+                                    || prop.type?.hasAnnotationOf(Repository::class) == true
+                        }
+
+                constructorDependsOnRepo || fieldDependsOnRepo
+            }
+    }
+
+    /**
+     * Domain logic MUST NOT call repositories, gateways, clients, or loggers.
+     *
+     * Checks that classes in `..domain..` packages do not depend on types
+     * whose names end with Repository, Client, Gateway, or Logger.
+     * Requires a `..domain..` / `..infrastructure..` package convention.
+     *
+     * Medium confidence — naming conventions may miss unconventional names.
+     *
+     * @see core-kotlin.md §3.3
+     */
+    @Test
+    fun `domain layer must not depend on other layers`() {
+        val scope = Konsist.scopeFromProduction()
+
+        if (scope.classes().withPackage("..domain..").isNotEmpty()) {
+            scope.assertArchitecture {
+                val domain = Layer("Domain", "..domain..")
+                domain.dependsOnNothing()
+            }
+        }
+    }
 
     /**
      * Field injection (`@Autowired lateinit var dep`) hides a class's

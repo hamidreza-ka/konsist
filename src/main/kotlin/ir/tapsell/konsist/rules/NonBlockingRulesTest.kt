@@ -31,13 +31,25 @@ import org.junit.jupiter.api.extension.ExtendWith
 @Tag("konsist-non-blocking")
 @ExtendWith(BaselineExtension::class)
 class NonBlockingRulesTest {
+
+    /**
+     * Substrings matched against each function's body source
+     * ([KoFunctionDeclaration.text]). This is a substring search, not semantic
+     * analysis — literals inside comments or strings will also match.
+     */
     private val forbiddenCalls = listOf(
         "Thread.sleep",
+        "Thread::sleep",
         "CountDownLatch",
         "runBlocking",
         "GlobalScope",
     )
 
+    /**
+     * No production function body may contain a call to a blocking or
+     * unstructured-concurrency API (`Thread.sleep`, `runBlocking`,
+     * `GlobalScope`, etc.).
+     */
     @Test
     fun `functions must not call blocking or unstructured-concurrency APIs`() {
         Konsist.scopeFromProduction()

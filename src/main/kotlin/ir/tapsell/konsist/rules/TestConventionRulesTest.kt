@@ -20,6 +20,13 @@ import org.junit.jupiter.api.extension.ExtendWith
 @ExtendWith(BaselineExtension::class)
 class TestConventionRulesTest {
 
+    /**
+     * Unit tests must not pull in a Spring `ApplicationContext`.
+     *
+     * A Spring context turns a fast unit test into a slow integration test.
+     * Flags `@SpringBootTest`, `@WebMvcTest`, `@DataMongoTest`, and
+     * `@AutoConfigureMockMvc` on any class under `src/test`.
+     */
     @Test
     fun `unit tests must not load a Spring context`() {
         val springContextAnnotations = listOf(
@@ -36,6 +43,13 @@ class TestConventionRulesTest {
             }
     }
 
+    /**
+     * `FooTest` must live in the same package as `Foo`.
+     *
+     * If there is no matching production class (e.g. a helper or base test
+     * class), the check is skipped — only tests with a corresponding
+     * production class are constrained.
+     */
     @Test
     fun `unit test package must match the package of the class under test`() {
         val mainClasses = Konsist.scopeFromProduction().classes()
