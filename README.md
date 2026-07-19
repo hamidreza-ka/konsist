@@ -41,17 +41,17 @@ Run specific rule categories with JUnit Platform tags:
 
 ## Available Rules
 
-| Tag                         | Class                        | What it enforces                                                                                                                                                                                        |
-|-----------------------------|------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `konsist-general`           | `GeneralConventionRulesTest` | No `println`/`print` in production code; no `!!` not-null assertion operator                                                                                                                            |
-| `konsist-immutability`      | `ImmutabilityRulesTest`      | Entity classes must be `data class`; all class, object, and companion object properties must be immutable `val` (no `var`, no `lateinit`, no mutable collection types)                                  |
-| `konsist-layer-dependency`  | `LayerDependencyRulesTest`   | Controllers must not depend on repositories (constructor or field injection); no `@Autowired` field injection — require constructor injection; no redundant `@Autowired` on single primary constructors |
-| `konsist-naming`            | `NamingConventionRulesTest`  | `@Service` classes must contain "Service"; `@RestController` classes must end with "Controller"; `@Repository` classes must end with "Repository"                                                       |
-| `konsist-non-blocking`      | `NonBlockingRulesTest`       | Functions must not use `Thread.sleep`, `CountDownLatch`, `runBlocking`, or `GlobalScope`                                                                                                                |
-| `konsist-package-structure` | `PackageStructureRulesTest`  | `@RestController` classes must be inside a `controller` or `presentation` package; `@Repository` classes must be inside a `domain` package; `*Entity` classes must be inside a `domain` package         |
-| `konsist-test-conventions`  | `TestConventionRulesTest`    | Unit tests must not load a Spring context (no `@SpringBootTest`, `@WebMvcTest`, `@DataMongoTest`, `@AutoConfigureMockMvc`); test class package must match the class-under-test package                  |
+| Tag                        | Class                        | What it enforces                                                                                                                                                                                                                                                    |
+|----------------------------|------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `konsist-domain-modeling`  | `DomainModelingRulesTest`    | Shared `Id` value types must follow canonical shape (`@JvmInline`, `value class` wrapping `UUID`, private constructor, factory methods, KDoc); functions must not use `Pair` or `Triple` in parameters or return types                                              |
+| `konsist-general`          | `GeneralConventionRulesTest` | No `println`/`print` in production code; no `!!` not-null assertion operator                                                                                                                                                                                        |
+| `konsist-immutability`     | `ImmutabilityRulesTest`      | All class/object/companion/top-level properties must be immutable `val` (no `var`, no `lateinit`, no mutable collection types on non-private properties); public functions must not expose mutable collection return types                                          |
+| `konsist-layer-dependency` | `LayerDependencyRulesTest`   | Controllers must not depend on repositories (constructor or field injection, detected by name or `@Repository` annotation); domain layer must not depend on other layers; no `@Autowired` field injection; no redundant `@Autowired` on single primary constructors |
+| `konsist-naming`           | `NamingConventionRulesTest`  | `@Service` classes must end with `Service` or `ServiceImpl`; `@RestController` classes must end with `Controller`; `@Repository` classes must end with `Repository`                                                                                                 |
+| `konsist-non-blocking`     | `NonBlockingRulesTest`       | Functions must not use `Thread.sleep`, `Thread::sleep`, `CountDownLatch`, `runBlocking`, or `GlobalScope`                                                                                                                                                           |
+| `konsist-test-conventions` | `TestConventionRulesTest`    | Unit tests must not load a Spring context (no `@SpringBootTest`, `@WebMvcTest`, `@DataMongoTest`, `@AutoConfigureMockMvc`); test class package must match the class-under-test package                                                                              |
 
-All rule classes ship with `@ExtendWith(BaselineExtension::class)` — the [junit-baseline-extension](https://github.com/beigirad/junit-baseline-extension) records a snapshot of existing violations on the first run and only fails on **new** violations thereafter. Add `junit-baseline-extension` to your project's test dependencies to opt in.
+All rule classes ship with `@ExtendWith(BaselineExtension::class)` — the [junit-baseline-extension](https://github.com/beigirad/junit-baseline-extension) records a snapshot of existing violations on the first run and only fails on **new** violations thereafter. It is included transitively via the `api` dependency scope — no extra dependency needed.
 
 ## How It Works
 
@@ -82,9 +82,9 @@ Spring Boot fat JARs use a custom `jar:nested:...` URL protocol that `java.net.J
 | Konsist                  | 0.17.3       | `api` (transitive to consumers)       |
 | JUnit Jupiter            | 5.10.2 (BOM) | `api` (transitive to consumers)       |
 | JUnit Platform Engine    | 5.10.2       | `api` (transitive to consumers)       |
+| junit-baseline-extension | 1.7          | `api` (transitive to consumers)       |
 | ClassGraph               | 4.8.184      | `implementation` (internal only)      |
 | Spring Framework         | 6.2.7 (BOM)  | `compileOnly` (consumer supplies own) |
-| junit-baseline-extension | 1.6          | `compileOnly` (consumer supplies own) |
 
 ## License
 
