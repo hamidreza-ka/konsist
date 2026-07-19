@@ -1,6 +1,6 @@
 # Konsist Architecture Rules
 
-[![JitPack](https://img.shields.io/badge/JitPack-0.1.5-brightgreen)](https://jitpack.io/#ir.tapsell/konsist)
+[![JitPack](https://img.shields.io/badge/JitPack-0.1.5-brightgreen)](https://jitpack.io/#hamidreza-ka/konsist)
 
 A shared **Konsist architecture-rule library** published as a JAR (`ir.tapsell:konsist`). Consuming Kotlin/Spring projects add it as a test dependency and the rules run as part of their JUnit 5 test suite — no Gradle plugin or annotation processor required.
 
