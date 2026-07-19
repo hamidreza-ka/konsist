@@ -20,12 +20,12 @@ dependencies {
     compileOnly("org.springframework:spring-context")
     compileOnly("org.springframework:spring-web")
 
-    /** Baseline/snapshot testing extension for JUnit 5 — consumers provide their own */
-    compileOnly("com.github.beigirad:junit-baseline-extension:1.6")
-
     /** ClassGraph scans the classpath for rule classes at runtime; kept implementation-scoped
      *  because consumers never call ClassGraph directly */
     implementation("io.github.classgraph:classgraph:4.8.184")
+
+    /** Baseline/snapshot testing extension for JUnit 5 */
+    api("com.github.beigirad:junit-baseline-extension:1.7")
 
     /** api = transitive to consumers; both are part of the published rule classes' contract */
     api("com.lemonappdev:konsist:0.17.3")
