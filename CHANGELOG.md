@@ -5,6 +5,52 @@ All notable changes to the Konsist architecture-rule library.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.5] — 2026-07-19
+
+### Added
+
+- **`DomainModelingRulesTest`** (`konsist-domain-modeling`). Enforces the canonical shape of shared `Id` value types
+  (`@JvmInline`, `value class` wrapping `UUID`, private constructor, factory methods `from(String)` / `fromOrThrow(String)`
+  / `from(UUID)` / `generate()`, and KDoc). Also forbids `Pair` and `Triple` in function signatures — replace with named
+  data classes or sealed types.
+
+- **Domain-layer dependency check** in `LayerDependencyRulesTest`. Asserts that classes in `..domain..` packages do not
+  depend on any other layer (repository, client, gateway, logger). Uses Konsist's `assertArchitecture` API and is gated
+  behind a package-existence guard so it is a no-op in projects without a domain package.
+
+- **Top-level property immutability** check in `ImmutabilityRulesTest`. Extends the existing object/companion-object
+  immutability rule to also cover top-level `val`/`var` declarations.
+
+- **Public mutable-collection-return** check in `ImmutabilityRulesTest`. Public functions must not expose mutable
+  collection types (`MutableList`, `MutableMap`, etc.) in their return types.
+
+- **`Thread::sleep` to forbidden calls** in `NonBlockingRulesTest`. The method-reference form is now caught alongside the
+  existing `Thread.sleep` substring.
+
+### Changed
+
+- **`@Service` naming rule** now accepts both `*Service` and `*ServiceImpl`. Previously required the bare `Service`
+  substring anywhere in the name.
+
+- **`junit-baseline-extension` bumped** from 1.6 to 1.7 and promoted from `compileOnly` to `api`. Consumers now get the
+  extension transitively instead of having to declare their own dependency.
+
+- **Mutable-collection property check** now excludes `private` properties. A `private var` with a mutable type that is
+  never exposed is not a thread-safety risk for external callers.
+
+- **Controller→repository detection** now also flags dependencies on types annotated with `@Repository`, not just types
+  whose name ends in `Repository`.
+
+### Removed
+
+- **`PackageStructureRulesTest`** — removed. The package-location rules (controllers in `controller`/`presentation`,
+  repositories and entities in `domain`) were too opinionated for a shared library and have been deleted.
+
+### Documentation
+
+- Expanded KDoc across all rule classes. Every test method now documents its scope, confidence level, and rationale.
+  Class-level KDoc updated to remove references to deleted files and non-existent rules.
+
 ## [0.1.4] — 2026-07-14
 
 ### Added

@@ -4,6 +4,7 @@ plugins {
 }
 
 group = "ir.tapsell"
+version = "0.1.5"
 
 repositories {
     mavenCentral()
