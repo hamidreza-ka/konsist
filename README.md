@@ -86,6 +86,3 @@ Spring Boot fat JARs use a custom `jar:nested:...` URL protocol that `java.net.J
 | ClassGraph               | 4.8.184      | `implementation` (internal only)      |
 | Spring Framework         | 6.2.7 (BOM)  | `compileOnly` (consumer supplies own) |
 
-## License
-
-Internal — Tapsell.
