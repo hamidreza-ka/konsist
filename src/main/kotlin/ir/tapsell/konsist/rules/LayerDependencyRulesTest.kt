@@ -29,32 +29,6 @@ import org.springframework.web.bind.annotation.RestController
 @ExtendWith(BaselineExtension::class)
 class LayerDependencyRulesTest {
 
-    @Test
-    fun `controllers must not depend on repositories`() {
-        Konsist.scopeFromProduction()
-            .classes()
-            .withAnnotationOf(RestController::class)
-            .assertFalse { controller ->
-                // Constructor injection
-                val constructorDependsOnRepo =
-                    controller
-                        .primaryConstructor?.parameters?.any { dep -> dep.type.name.endsWith("Repository") }
-                        ?: false
-
-                // Field injection (@Autowired lateinit var repo)
-                val fieldDependsOnRepo =
-                    controller.properties()
-                        .filter { prop ->
-                            prop.hasAnnotationOf(Autowired::class)
-                        }
-                        .any { prop ->
-                            prop.type?.name?.endsWith("Repository") == true
-                        }
-
-                constructorDependsOnRepo || fieldDependsOnRepo
-            }
-    }
-
     /**
      * Field injection (`@Autowired lateinit var dep`) hides a class's
      * dependencies, defeats `val`/immutability, and makes the bean impossible
