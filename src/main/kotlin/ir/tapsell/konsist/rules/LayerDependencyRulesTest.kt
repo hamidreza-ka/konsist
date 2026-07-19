@@ -76,7 +76,6 @@ class LayerDependencyRulesTest {
      *
      * Medium confidence — naming conventions may miss unconventional names.
      *
-     * @see core-kotlin.md §3.3
      */
     @Test
     fun `domain layer must not depend on other layers`() {
@@ -119,7 +118,7 @@ class LayerDependencyRulesTest {
             .assertFalse { cls ->
                 val primary = cls.primaryConstructor ?: return@assertFalse false
                 cls.secondaryConstructors.isEmpty() &&
-                    primary.annotations.any { it.name == "Autowired" }
+                        primary.hasAnnotationOf(Autowired::class)
             }
     }
 }
